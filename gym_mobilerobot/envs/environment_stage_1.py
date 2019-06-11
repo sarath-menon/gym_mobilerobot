@@ -43,6 +43,11 @@ class MobileRobotGymEnv(gym.Env):
         self.pause_proxy = rospy.ServiceProxy('gazebo/pause_physics', Empty)
         self.respawn_goal = Respawn()
         self.past_distance = 0.
+        self.past_action = np.array([0.,0.])
+        obs_high = np.concatenate((np.array([3.5] * 10) ,np.array([0.22, 2.0]), np.array([10.]), np.array([10.]) ))
+        obs_low = np.concatenate((np.array([0.] * 10) ,np.array([0.0, -2.0]), np.array([-10.]), np.array([-10.]) ))
+        self.action_space = spaces.Box(low=np.array([0., -2.0]) ,high=np.array([0.22, 2.0]), dtype=np.float32)
+        self.observation_space = spaces.Box(low=obs_low , high=obs_high, dtype=np.float32)
         #Keys CTRL + c will stop script
         rospy.on_shutdown(self.shutdown)
 
@@ -80,7 +85,7 @@ class MobileRobotGymEnv(gym.Env):
 
         self.heading = round(heading, 3)
 
-    def getState(self, scan, past_action):
+    def getState(self, scan):
         scan_range = []
         heading = self.heading
         min_range = 0.16
@@ -98,7 +103,7 @@ class MobileRobotGymEnv(gym.Env):
         if min_range > min(scan_range) > 0:
             done = True
 
-        for pa in past_action:
+        for pa in self.past_action:
             scan_range.append(pa)
 
         current_distance = round(math.hypot(self.goal_x - self.position.x, self.goal_y - self.position.y),2)
@@ -141,7 +146,7 @@ class MobileRobotGymEnv(gym.Env):
 
         return reward
 
-    def step(self, action, past_action):
+    def step(self, action):
         linear_vel = action[0]
         ang_vel = action[1]
 
@@ -157,7 +162,8 @@ class MobileRobotGymEnv(gym.Env):
             except:
                 pass
 
-        state, done = self.getState(data, past_action)
+        state, done = self.getState(data)
+        self.past_action = action
         reward = self.setReward(state, done)
 
         return np.asarray(state), reward, done

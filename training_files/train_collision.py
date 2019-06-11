@@ -240,13 +240,13 @@ class Trainer:
         soft_update(self.target_critic, self.critic, TAU)
 
     def save_models(self, episode_count):
-        torch.save(self.target_actor.state_dict(), dirPath +'/Models/mine_stage4/'+str(episode_count)+ '_actor.pt')
-        torch.save(self.target_critic.state_dict(), dirPath + '/Models/mine_stage4/'+str(episode_count)+ '_critic.pt')
+        torch.save(self.target_actor.state_dict(), dirPath +'/Models/mine_exp_stage1/'+str(episode_count)+ '_actor.pt')
+        torch.save(self.target_critic.state_dict(), dirPath + '/Models/mine_exp_stage1/'+str(episode_count)+ '_critic.pt')
         print('****Models saved***')
 
     def load_models(self, episode):
-        self.actor.load_state_dict(torch.load(dirPath + '/Models/mine_stage4/'+str(episode)+ '_actor.pt'))
-        self.critic.load_state_dict(torch.load(dirPath + '/Models/mine_stage4/'+str(episode)+ '_critic.pt'))
+        self.actor.load_state_dict(torch.load(dirPath + '/Models/mine_exp_stage1/'+str(episode)+ '_actor.pt'))
+        self.critic.load_state_dict(torch.load(dirPath + '/Models/mine_exp_stage1/'+str(episode)+ '_critic.pt'))
         hard_update(self.target_actor, self.actor)
         hard_update(self.target_critic, self.critic)
         print('***Models load***')
@@ -288,7 +288,7 @@ print('Action Dimensions: ' + str(ACTION_DIMENSION))
 print('Action Max: ' + str(ACTION_V_MAX) + ' m/s and ' + str(ACTION_W_MAX) + ' rad/s')
 ram = MemoryBuffer(MAX_BUFFER)
 trainer = Trainer(STATE_DIMENSION, ACTION_DIMENSION, ACTION_V_MAX, ACTION_W_MAX, ram)
-episode_load = 2170
+episode_load = 450
 trainer.load_models(episode_load)
 
 

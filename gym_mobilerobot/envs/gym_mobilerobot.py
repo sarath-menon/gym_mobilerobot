@@ -1,7 +1,21 @@
-import gym
-import copy
-import random
-from gym import spaces, error
+#!/usr/bin/env python
+#################################################################################
+# Copyright 2018 ROBOTIS CO., LTD.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#################################################################################
+
+# Authors: Gilbert #
 
 import rospy
 import numpy as np
@@ -13,6 +27,11 @@ from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from respawnGoal import Respawn
+
+import gym
+from gym import spaces
+# from gym.envs.classic_control import rendering
+from gym.utils import seeding
 
 class MobileRobotGymEnv(gym.Env):
     def __init__(self):
@@ -29,17 +48,13 @@ class MobileRobotGymEnv(gym.Env):
         self.pause_proxy = rospy.ServiceProxy('gazebo/pause_physics', Empty)
         self.respawn_goal = Respawn()
         self.past_distance = 0.
+        self.past_action = np.array([0.,0.])
+        obs_high = np.concatenate((np.array([3.5] * 10) ,np.array([0.22, 2.0]), np.array([10.]), np.array([10.]) ))
+        obs_low = np.concatenate((np.array([0.] * 10) ,np.array([0.0, -2.0]), np.array([-10.]), np.array([-10.]) ))
+        self.action_space = spaces.Box(low=np.array([0., -2.0]) ,high=np.array([0.22, 2.0]), dtype=np.float32)
+        self.observation_space = spaces.Box(low=obs_low , high=obs_high, dtype=np.float32)
         #Keys CTRL + c will stop script
         rospy.on_shutdown(self.shutdown)
-
-        high_action = np.array([0.22,1.0])
-        low_action = np.array([0.0, 0.0])
-
-        high_obs = np.array([100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0])
-        low_obs = np.array([0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0])
-
-        self.action_space = spaces.Box(low=low_action, high=high_action ,dtype=np.float32)
-        self.observation_space = spaces.Box(low_obs, high_obs, dtype=np.float32)
 
     def shutdown(self):
         #you can stop turtlebot by publishing an empty Twist
@@ -75,7 +90,7 @@ class MobileRobotGymEnv(gym.Env):
 
         self.heading = round(heading, 3)
 
-    def getState(self, scan, past_action):
+    def getState(self, scan):
         scan_range = []
         heading = self.heading
         min_range = 0.16
@@ -93,7 +108,7 @@ class MobileRobotGymEnv(gym.Env):
         if min_range > min(scan_range) > 0:
             done = True
 
-        for pa in past_action:
+        for pa in self.past_action:
             scan_range.append(pa)
 
         current_distance = round(math.hypot(self.goal_x - self.position.x, self.goal_y - self.position.y),2)
@@ -109,12 +124,13 @@ class MobileRobotGymEnv(gym.Env):
 
 
         distance_rate = (self.past_distance - current_distance)
-        if distance_rate > 0:
-            reward = 2.*distance_rate
-        #if distance_rate == 0:
-        #    reward = -10.
-        if distance_rate <= 0:
-            reward = -8.
+        # if distance_rate > 0:
+        #     reward = 20.*distance_rate
+        # #if distance_rate == 0:
+        # #    reward = -10.
+        # if distance_rate <= 0:
+        #     reward = -8.
+        reward = 0
         #angle_reward = math.pi - abs(heading)
         #print('d', 500*distance_rate)
         #reward = 500.*distance_rate #+ 3.*angle_reward
@@ -135,7 +151,7 @@ class MobileRobotGymEnv(gym.Env):
 
         return reward
 
-    def step(self, action, past_action):
+    def step(self, action):
         linear_vel = action[0]
         ang_vel = action[1]
 
@@ -151,10 +167,11 @@ class MobileRobotGymEnv(gym.Env):
             except:
                 pass
 
-        state, done = self.getState(data, past_action)
+        state, done = self.getState(data)
+        self.past_action = action
         reward = self.setReward(state, done)
 
-        return np.asarray(state), reward, done
+        return np.asarray(state), reward, done ,{}
 
     def reset(self):
         rospy.wait_for_service('gazebo/reset_simulation')
@@ -177,6 +194,6 @@ class MobileRobotGymEnv(gym.Env):
             self.goal_x, self.goal_y = self.respawn_goal.getPosition(True, delete=True)
 
         self.goal_distance = self.getGoalDistace()
-        state, done = self.getState(data, [0.,0.])
+        state, done = self.getState(data)
 
         return np.asarray(state)
