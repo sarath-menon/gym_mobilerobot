@@ -15,7 +15,7 @@ Openai gym compatible Deep RL environment for mobile robot navigation
  ## Installation
  ```
  git clone https://github.com/sarath-menon/gym_mobilerobot.git
- cd gym_pybullet_mobilerobot
+ cd gym_mobilerobot
  pip install -e .
 ```
  
