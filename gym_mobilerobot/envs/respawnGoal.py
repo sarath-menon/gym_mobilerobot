@@ -21,14 +21,19 @@ import rospy
 import random
 import time
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from gazebo_msgs.srv import SpawnModel, DeleteModel
 from gazebo_msgs.msg import ModelStates
 from geometry_msgs.msg import Pose
 
+#---Directory Path---#
+dirPath = os.path.dirname(os.path.realpath(__file__))
+
 class Respawn():
     def __init__(self):
         self.modelPath = os.path.dirname(os.path.realpath(__file__))
-        self.modelPath = '/home/adept/catkin_ws/src/turtlebot3_simulations/turtlebot3_gazebo/models/turtlebot3_square/goal_box/model.sdf'
+        self.modelPath = dirPath + '/goal_box/model.sdf'
         self.f = open(self.modelPath, 'r')
         self.model = self.f.read()
         # self.stage = rospy.get_param('/stage_number')
