@@ -53,12 +53,15 @@ class MobileRobotGymEnv(gym.Env):
         obs_low = np.concatenate((np.array([0.] * 10) ,np.array([0.0, -2.0]), np.array([-10.]), np.array([-10.]) ))
         self.action_space = spaces.Box(low=np.array([0., -2.0]) ,high=np.array([0.22, 2.0]), dtype=np.float32)
         self.observation_space = spaces.Box(low=obs_low , high=obs_high, dtype=np.float32)
+        self.count_collision, self.count_goal  = 0,0
         #Keys CTRL + c will stop script
         rospy.on_shutdown(self.shutdown)
 
+    def stats(self):
+        return self.count_collision, self.count_goal
+
     def shutdown(self):
         #you can stop turtlebot by publishing an empty Twist
-        #message
         rospy.loginfo("Stopping TurtleBot")
         self.pub_cmd_vel.publish(Twist())
         rospy.sleep(1)
@@ -120,30 +123,23 @@ class MobileRobotGymEnv(gym.Env):
     def setReward(self, state, done):
         current_distance = state[-1]
         heading = state[-2]
-        #print('cur:', current_distance, self.past_distance)
-
-
         distance_rate = (self.past_distance - current_distance)
-        # if distance_rate > 0:
-        #     reward = 20.*distance_rate
-        # #if distance_rate == 0:
-        # #    reward = -10.
-        # if distance_rate <= 0:
-        #     reward = -8.
-        reward = 0
-        #angle_reward = math.pi - abs(heading)
-        #print('d', 500*distance_rate)
-        #reward = 500.*distance_rate #+ 3.*angle_reward
+        if distance_rate > 0:
+            reward = 200.*distance_rate
+        if distance_rate <= 0:
+            reward = -8.
         self.past_distance = current_distance
 
         if done:
             rospy.loginfo("Collision!!")
             reward = -550.
+            self.count_collision+=1
             self.pub_cmd_vel.publish(Twist())
 
         if self.get_goalbox:
             rospy.loginfo("Goal!!")
             reward = 500.
+            self.count_goal+=1
             self.pub_cmd_vel.publish(Twist())
             self.goal_x, self.goal_y = self.respawn_goal.getPosition(True, delete=True)
             self.goal_distance = self.getGoalDistace()
