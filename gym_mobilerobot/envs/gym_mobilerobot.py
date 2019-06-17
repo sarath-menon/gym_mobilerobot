@@ -107,7 +107,6 @@ class MobileRobotGymEnv(gym.Env):
             else:
                 scan_range.append(scan.ranges[i])
 
-
         if min_range > min(scan_range) > 0:
             done = True
 
@@ -120,25 +119,30 @@ class MobileRobotGymEnv(gym.Env):
 
         return scan_range + [heading, current_distance], done
 
-    def setReward(self, state, done):
+    def setReward(self, state, done,type='normal'):
         current_distance = state[-1]
         heading = state[-2]
         distance_rate = (self.past_distance - current_distance)
         if distance_rate > 0:
-            reward = 200.*distance_rate
+            if type=='normal': reward = 200.*distance_rate
+            elif type=='scaled': reward = 0.2*distance_rate
         if distance_rate <= 0:
-            reward = -8.
+            if type=='normal': reward = -8.
+            elif type=='scaled': reward = -0.01
+
         self.past_distance = current_distance
 
         if done:
             rospy.loginfo("Collision!!")
-            reward = -550.
+            if type=='normal': reward = -500.
+            elif type=='scaled': reward = -1.
             self.count_collision+=1
             self.pub_cmd_vel.publish(Twist())
 
         if self.get_goalbox:
             rospy.loginfo("Goal!!")
-            reward = 500.
+            if type=='normal': reward = 500.
+            elif type=='scaled': reward = 1.
             self.count_goal+=1
             self.pub_cmd_vel.publish(Twist())
             self.goal_x, self.goal_y = self.respawn_goal.getPosition(True, delete=True)
