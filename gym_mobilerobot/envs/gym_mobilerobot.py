@@ -93,7 +93,7 @@ class MobileRobotGymEnv(gym.Env):
 
         self.heading = round(heading, 3)
 
-    def getState(self, scan):
+    def getState(self, scan,mode='normal'):
         scan_range = []
         heading = self.heading
         min_range = 0.16
@@ -101,11 +101,13 @@ class MobileRobotGymEnv(gym.Env):
 
         for i in range(len(scan.ranges)):
             if scan.ranges[i] == float('Inf'):
-                scan_range.append(3.5)
+                if mode='normal':scan_range.append(3.5)
+                if mode='normalize':scan_range.append(1) # 3.5 / 3.5
             elif np.isnan(scan.ranges[i]):
                 scan_range.append(0)
             else:
-                scan_range.append(scan.ranges[i])
+                if mode='normal':scan_range.append(scan.ranges[i])
+                if mode='normalize':scan_range.append(scan.ranges[i] / 3.5)
 
         if min_range > min(scan_range) > 0:
             done = True
@@ -119,7 +121,7 @@ class MobileRobotGymEnv(gym.Env):
 
         return scan_range + [heading, current_distance], done
 
-    def setReward(self, state, done,type='normal'):
+    def setReward(self, state, done,type='scaled'):
         current_distance = state[-1]
         heading = state[-2]
         distance_rate = (self.past_distance - current_distance)
