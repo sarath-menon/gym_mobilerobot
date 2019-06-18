@@ -93,7 +93,7 @@ class MobileRobotGymEnv(gym.Env):
 
         self.heading = round(heading, 3)
 
-    def getState(self, scan, type='normal'):
+    def getState(self, scan, type='normalize'):
         scan_range = []
         heading = self.heading
         min_range = 0.16
