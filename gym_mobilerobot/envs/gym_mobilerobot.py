@@ -121,15 +121,15 @@ class MobileRobotGymEnv(gym.Env):
 
         return scan_range + [heading, current_distance], done
 
-    def setReward(self, state, done,type='scaled'):
+    def setReward(self, state, done,type='unscaled'):
         current_distance = state[-1]
         heading = state[-2]
         distance_rate = (self.past_distance - current_distance)
         if distance_rate > 0:
-            if type=='normal': reward = 200.*distance_rate
+            if type=='unscaled': reward = 200.*distance_rate
             elif type=='scaled': reward = 0.2*distance_rate
         if distance_rate <= 0:
-            if type=='normal': reward = -8.
+            if type=='unscaled': reward = -8.
             elif type=='scaled': reward = -0.01
 
         self.past_distance = current_distance
