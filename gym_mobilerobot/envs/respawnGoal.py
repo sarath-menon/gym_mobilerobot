@@ -26,17 +26,20 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from gazebo_msgs.srv import SpawnModel, DeleteModel
 from gazebo_msgs.msg import ModelStates
 from geometry_msgs.msg import Pose
+from std_msgs.msg import Float32MultiArray
+from combination_obstacle_1 import Combination
+from gazebo_msgs.msg import ModelState, ModelStates
 
 #---Directory Path---#
 dirPath = os.path.dirname(os.path.realpath(__file__))
 
-class Respawn():
+class Respawn(Combination):
     def __init__(self):
         self.modelPath = os.path.dirname(os.path.realpath(__file__))
         self.modelPath = dirPath + '/goal_box/model.sdf'
         self.f = open(self.modelPath, 'r')
         self.model = self.f.read()
-        # self.stage = rospy.get_param('/stage_number')
+        self.stage = rospy.get_param('/env_type')
         self.stage = 1
         self.goal_position = Pose()
         self.init_goal_x = 0.6
@@ -44,16 +47,16 @@ class Respawn():
         self.goal_position.position.x = self.init_goal_x
         self.goal_position.position.y = self.init_goal_y
         self.modelName = 'goal'
-        self.obstacle_1 = -1.2, -0.7
-        self.obstacle_2 = 0.7, -0.8
-        self.obstacle_3 = -0.7, 0.2
-        self.obstacle_4 = 0.9, 0.2
-        self.obstacle_5 = -0.1, 0.6
-        self.obstacle_6 = 0.6, 1.0
+        # self.obstacle_1 = -0.98, -0.49
+        # self.obstacle_2 = 0.96, -0.82
+        # self.obstacle_3 = -0.11, 0.87
+        self.obstacles = {'cylinder_1': [-0.98,-0.49], 'cylinder_2': [0.96,-0.82], 'cylinder_3': [-0.11,0.87]}
         self.last_goal_x = self.init_goal_x
         self.last_goal_y = self.init_goal_y
         self.last_index = 0
         self.sub_model = rospy.Subscriber('gazebo/model_states', ModelStates, self.checkModel)
+        self.pub = rospy.Publisher('goal_position', Float32MultiArray, queue_size=10)
+        self.pub_model = rospy.Publisher('gazebo/set_model_state', ModelState, queue_size=1)
         self.check_model = False
         self.index = 0
 
@@ -85,25 +88,39 @@ class Respawn():
             else:
                 pass
 
+    def move_obstacles(self, goal_x, goal_y):
+        model = rospy.wait_for_message('gazebo/model_states', ModelStates)
+        count=0
+        for i in range(len(model.name)):
+            if count==2 : break
+            if model.name[i] == 'cylinder_1' or model.name[i] == 'cylinder_2'or model.name[i] == 'cylinder_3':
+                print(model.name[i])
+                obstacle_1 = ModelState()
+                obstacle_1.model_name = model.name[i]
+                obstacle_1.pose = model.pose[i]
+
+                obstacle_1.pose.position.x = random.randrange(-15, 17) / 10.0
+                obstacle_1.pose.position.y = random.randrange(-15, 17) / 10.0
+                self.obstacles[model.name[i]] = [obstacle_1.pose.position.x, obstacle_1.pose.position.y]
+                print(count)
+                count+=1
+                self.pub_model.publish(obstacle_1)
+                time.sleep(0.5)
+
+
     def getPosition(self, position_check=False, delete=False):
         if delete:
             self.deleteModel()
 
-        if self.stage != 4:
+        if self.stage == 'static_obstacle' or 'dynamic_obstacle':
             while position_check:
                 goal_x = random.randrange(-12, 13) / 10.0
                 goal_y = random.randrange(-12, 13) / 10.0
-                if abs(goal_x - self.obstacle_1[0]) <= 0.4 and abs(goal_y - self.obstacle_1[1]) <= 0.6:
+                if abs(goal_x - obstacles['cylinder_1'][0]) <= 0.6 and abs(goal_y - obstacles['cylinder_1'][1]) <= 0.6:
                     position_check = True
-                elif abs(goal_x - self.obstacle_2[0]) <= 0.4 and abs(goal_y - self.obstacle_2[1]) <= 0.6:
+                elif abs(goal_x - obstacles['cylinder_2'][0]) <= 0.6 and abs(goal_y - obstacles['cylinder_2'][1]) <=0.6:
                     position_check = True
-                elif abs(goal_x - self.obstacle_3[0]) <= 0.4 and abs(goal_y - self.obstacle_3[1]) <= 0.6:
-                    position_check = True
-                elif abs(goal_x - self.obstacle_4[0]) <= 0.4 and abs(goal_y - self.obstacle_4[1]) <= 0.6:
-                    position_check = True
-                elif abs(goal_x - self.obstacle_5[0]) <= 0.4 and abs(goal_y - self.obstacle_5[1]) <= 3.0:
-                    position_check = True
-                elif abs(goal_x - self.obstacle_6[0]) <= 0.4 and abs(goal_y - self.obstacle_6[1]) <= 3.2:
+                elif abs(goal_x - obstacles['cylinder_3'][0]) <= 0.6 and abs(goal_y - obstacles['cylinder_3'][1]) <=0.6:
                     position_check = True
                 elif abs(goal_x - 0.0) <= 0.4 and abs(goal_y - 0.0) <= 0.4:
                     position_check = True
@@ -113,24 +130,15 @@ class Respawn():
                 if abs(goal_x - self.last_goal_x) < 1 and abs(goal_y - self.last_goal_y) < 1:
                     position_check = True
 
-                self.goal_position.position.x = goal_x
-                self.goal_position.position.y = goal_y
+        self.goal_position.position.x = goal_x
+        self.goal_position.position.y = goal_y
 
-        else:
-            while position_check:
-                goal_x_list = [0.6, 1.9, 0.5, 0.2, -0.8, -1, -1.9, 0.5, 2, 0.5, 0, -0.1, -2]
-                goal_y_list = [0, -0.5, -1.9, 1.5, -0.9, 1, 1.1, -1.5, 1.5, 1.8, -1, 1.6, -0.8]
 
-                self.index = random.randrange(0, 13)
-                print(self.index, self.last_index)
-                if self.last_index == self.index:
-                    position_check = True
-                else:
-                    self.last_index = self.index
-                    position_check = False
+        data = Float32MultiArray()
+        data.data = [goal_x, goal_y]
+        self.pub.publish(data)
 
-                self.goal_position.position.x = goal_x_list[self.index]
-                self.goal_position.position.y = goal_y_list[self.index]
+        if self.stage=='dynamic_obstacle':self.move_obstacles(self.goal_position.position.x, self.goal_position.position.y)
 
         time.sleep(0.5)
         self.respawnModel()
