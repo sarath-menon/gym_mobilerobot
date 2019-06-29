@@ -40,7 +40,6 @@ class Respawn(Combination):
         self.f = open(self.modelPath, 'r')
         self.model = self.f.read()
         self.stage = rospy.get_param('/env_type')
-        self.stage = 1
         self.goal_position = Pose()
         self.init_goal_x = 0.6
         self.init_goal_y = 0.0
