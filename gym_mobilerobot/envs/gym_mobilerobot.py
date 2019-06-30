@@ -96,7 +96,7 @@ class MobileRobotGymEnv(gym.Env):
     def getState(self, scan, type='normalized'):
         scan_range = []
         heading = self.heading
-        min_range = 0.16
+        min_range = 0.05
         done = False
 
         for i in range(len(scan.ranges)):
