@@ -95,7 +95,6 @@ class Respawn(Combination):
         for i in range(len(model.name)):
             if count==2 : break
             if model.name[i] == 'cylinder_1' or model.name[i] == 'cylinder_2'or model.name[i] == 'cylinder_3':
-                print(model.name[i])
                 obstacle_1 = ModelState()
                 obstacle_1.model_name = model.name[i]
                 obstacle_1.pose = model.pose[i]
@@ -103,7 +102,6 @@ class Respawn(Combination):
                 obstacle_1.pose.position.x = random.randrange(-15, 17) / 10.0
                 obstacle_1.pose.position.y = random.randrange(-15, 17) / 10.0
                 self.obstacles[model.name[i]] = [obstacle_1.pose.position.x, obstacle_1.pose.position.y]
-                print(count)
                 count+=1
 
 
