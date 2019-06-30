@@ -1,3 +1,5 @@
+%%writefile /home/gym_mobilerobot/gym_mobilerobot/envs/respawnGoal.py
+
 #!/usr/bin/env python
 #################################################################################
 # Copyright 2018 ROBOTIS CO., LTD.
@@ -105,7 +107,7 @@ class Respawn(Combination):
                 count+=1
 
 
-    def getPosition(self, position_check=False, delete=False):
+    def getPosition(self, position_check=True, delete=False):
         if delete:
             self.deleteModel()
 
@@ -113,11 +115,11 @@ class Respawn(Combination):
             while position_check:
                 goal_x = random.randrange(-12, 13) / 10.0
                 goal_y = random.randrange(-12, 13) / 10.0
-                if abs(goal_x - obstacles['cylinder_1'][0]) <= 0.6 and abs(goal_y - obstacles['cylinder_1'][1]) <= 0.6:
+                if abs(goal_x - self.obstacles['cylinder_1'][0]) <= 0.6 and abs(goal_y - self.obstacles['cylinder_1'][1]) <= 0.6:
                     position_check = True
-                elif abs(goal_x - obstacles['cylinder_2'][0]) <= 0.6 and abs(goal_y - obstacles['cylinder_2'][1]) <=0.6:
+                elif abs(goal_x - self.obstacles['cylinder_2'][0]) <= 0.6 and abs(goal_y - self.obstacles['cylinder_2'][1]) <=0.6:
                     position_check = True
-                elif abs(goal_x - obstacles['cylinder_3'][0]) <= 0.6 and abs(goal_y - obstacles['cylinder_3'][1]) <=0.6:
+                elif abs(goal_x - self.obstacles['cylinder_3'][0]) <= 0.6 and abs(goal_y - self.obstacles['cylinder_3'][1]) <=0.6:
                     position_check = True
                 elif abs(goal_x - 0.0) <= 0.4 and abs(goal_y - 0.0) <= 0.4:
                     position_check = True
@@ -144,3 +146,4 @@ class Respawn(Combination):
         self.last_goal_y = self.goal_position.position.y
 
         return self.goal_position.position.x, self.goal_position.position.y
+
