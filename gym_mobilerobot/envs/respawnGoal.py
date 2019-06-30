@@ -93,7 +93,6 @@ class Respawn(Combination):
         for i in range(len(model.name)):
             if count==2 : break
             if model.name[i] == 'cylinder_1' or model.name[i] == 'cylinder_2'or model.name[i] == 'cylinder_3':
-                print(model.name[i])
                 obstacle_1 = ModelState()
                 obstacle_1.model_name = model.name[i]
                 obstacle_1.pose = model.pose[i]
@@ -101,13 +100,10 @@ class Respawn(Combination):
                 obstacle_1.pose.position.x = random.randrange(-15, 17) / 10.0
                 obstacle_1.pose.position.y = random.randrange(-15, 17) / 10.0
                 self.obstacles[model.name[i]] = [obstacle_1.pose.position.x, obstacle_1.pose.position.y]
-                print(count)
                 count+=1
-                self.pub_model.publish(obstacle_1)
-                time.sleep(0.5)
 
 
-    def getPosition(self, position_check=False, delete=False):
+    def getPosition(self, position_check=True, delete=False):
         if delete:
             self.deleteModel()
 
@@ -115,11 +111,11 @@ class Respawn(Combination):
             while position_check:
                 goal_x = random.randrange(-12, 13) / 10.0
                 goal_y = random.randrange(-12, 13) / 10.0
-                if abs(goal_x - obstacles['cylinder_1'][0]) <= 0.6 and abs(goal_y - obstacles['cylinder_1'][1]) <= 0.6:
+                if abs(goal_x - self.obstacles['cylinder_1'][0]) <= 0.6 and abs(goal_y - self.obstacles['cylinder_1'][1]) <= 0.6:
                     position_check = True
-                elif abs(goal_x - obstacles['cylinder_2'][0]) <= 0.6 and abs(goal_y - obstacles['cylinder_2'][1]) <=0.6:
+                elif abs(goal_x - self.obstacles['cylinder_2'][0]) <= 0.6 and abs(goal_y - self.obstacles['cylinder_2'][1]) <=0.6:
                     position_check = True
-                elif abs(goal_x - obstacles['cylinder_3'][0]) <= 0.6 and abs(goal_y - obstacles['cylinder_3'][1]) <=0.6:
+                elif abs(goal_x - self.obstacles['cylinder_3'][0]) <= 0.6 and abs(goal_y - self.obstacles['cylinder_3'][1]) <=0.6:
                     position_check = True
                 elif abs(goal_x - 0.0) <= 0.4 and abs(goal_y - 0.0) <= 0.4:
                     position_check = True
