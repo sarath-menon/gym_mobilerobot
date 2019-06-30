@@ -103,8 +103,6 @@ class Respawn(Combination):
                 self.obstacles[model.name[i]] = [obstacle_1.pose.position.x, obstacle_1.pose.position.y]
                 print(count)
                 count+=1
-                self.pub_model.publish(obstacle_1)
-                time.sleep(0.5)
 
 
     def getPosition(self, position_check=False, delete=False):
