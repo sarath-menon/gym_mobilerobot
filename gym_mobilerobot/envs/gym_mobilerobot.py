@@ -93,20 +93,21 @@ class MobileRobotGymEnv(gym.Env):
 
         self.heading = round(heading, 3)
 
-    def getState(self, scan):
+    def getState(self, scan, type='normalized'):
         scan_range = []
         heading = self.heading
-        min_range = 0.16
+        min_range = 0.05
         done = False
 
         for i in range(len(scan.ranges)):
             if scan.ranges[i] == float('Inf'):
-                scan_range.append(3.5)
+                if type=='normal':scan_range.append(3.5)
+                if type=='normalized':scan_range.append(1) # 3.5 / 3.5
             elif np.isnan(scan.ranges[i]):
                 scan_range.append(0)
             else:
-                scan_range.append(scan.ranges[i])
-
+                if type=='normal':scan_range.append(scan.ranges[i])
+                if type=='normalized':scan_range.append(scan.ranges[i] / 3.5)
 
         if min_range > min(scan_range) > 0:
             done = True
@@ -115,30 +116,35 @@ class MobileRobotGymEnv(gym.Env):
             scan_range.append(pa)
 
         current_distance = round(math.hypot(self.goal_x - self.position.x, self.goal_y - self.position.y),2)
-        if current_distance < 0.2:
+        if current_distance < 0.4:
             self.get_goalbox = True
 
         return scan_range + [heading, current_distance], done
 
-    def setReward(self, state, done):
+    def setReward(self, state, done,type='scaled'):
         current_distance = state[-1]
         heading = state[-2]
         distance_rate = (self.past_distance - current_distance)
         if distance_rate > 0:
-            reward = 200.*distance_rate
+            if type=='unscaled': reward = 200.*distance_rate
+            elif type=='scaled': reward = 0.2*distance_rate
         if distance_rate <= 0:
-            reward = -8.
+            if type=='unscaled': reward = -8.
+            elif type=='scaled': reward = -0.01
+
         self.past_distance = current_distance
 
         if done:
             rospy.loginfo("Collision!!")
-            reward = -550.
+            if type=='normal': reward = -500.
+            elif type=='scaled': reward = -1.
             self.count_collision+=1
             self.pub_cmd_vel.publish(Twist())
 
         if self.get_goalbox:
             rospy.loginfo("Goal!!")
-            reward = 500.
+            if type=='normal': reward = 500.
+            elif type=='scaled': reward = 0.95
             self.count_goal+=1
             self.pub_cmd_vel.publish(Twist())
             self.goal_x, self.goal_y = self.respawn_goal.getPosition(True, delete=True)
