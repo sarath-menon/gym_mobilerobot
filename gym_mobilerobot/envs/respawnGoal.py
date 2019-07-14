@@ -1,5 +1,3 @@
-%%writefile /home/gym_mobilerobot/gym_mobilerobot/envs/respawnGoal.py
-
 #!/usr/bin/env python
 #################################################################################
 # Copyright 2018 ROBOTIS CO., LTD.
