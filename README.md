@@ -2,9 +2,9 @@
 
 Openai gym compatible Deep RL environment for mobile robot navigation
 
-## Mobile robots Included
+## Mobile robot Platforms
 
-  1. Turtlebot
+  1. Turtlebot3
 
 ## Algorithms
 
@@ -20,4 +20,4 @@ Openai gym compatible Deep RL environment for mobile robot navigation
 ```
  
 
-Full instructions: https://www.novatec-gmbh.de/en/creating-a-gym-environment/
+Instructions fro creating custom gym environemnt: https://www.novatec-gmbh.de/en/creating-a-gym-environment/
