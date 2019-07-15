@@ -39,7 +39,8 @@ class Respawn(Combination):
         self.modelPath = dirPath + '/goal_box/model.sdf'
         self.f = open(self.modelPath, 'r')
         self.model = self.f.read()
-        self.stage = rospy.get_param('/env_type')
+        #self.stage = rospy.get_param('/env_type')
+        self.stage = "dynamic_obstacle"
         self.goal_position = Pose()
         self.init_goal_x = 0.6
         self.init_goal_y = 0.0
@@ -109,8 +110,8 @@ class Respawn(Combination):
 
         if self.stage == 'static_obstacle' or self.stage == 'dynamic_obstacle':
             while position_check:
-                goal_x = random.randrange(-12, 13) / 10.0
-                goal_y = random.randrange(-12, 13) / 10.0
+                goal_x = random.randrange(-24, 26) / 10.0
+                goal_y = random.randrange(-24, 26) / 10.0
                 if abs(goal_x - self.obstacles['cylinder_1'][0]) <= 0.6 and abs(goal_y - self.obstacles['cylinder_1'][1]) <= 0.6:
                     position_check = True
                 elif abs(goal_x - self.obstacles['cylinder_2'][0]) <= 0.6 and abs(goal_y - self.obstacles['cylinder_2'][1]) <=0.6:
@@ -135,7 +136,6 @@ class Respawn(Combination):
 
         if self.stage=='dynamic_obstacle':self.move_obstacles(self.goal_position.position.x, self.goal_position.position.y)
 
-        time.sleep(0.5)
         self.respawnModel()
 
         self.last_goal_x = self.goal_position.position.x

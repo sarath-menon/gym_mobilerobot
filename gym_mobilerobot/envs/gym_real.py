@@ -26,14 +26,17 @@ from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-from respawnGoal import Respawn
+from goal_real import Respawn
+from fiducial_msgs.msg import FiducialTransformArray
+from geometry_msgs.msg import PoseWithCovarianceStamped
+
 
 import gym
 from gym import spaces
 # from gym.envs.classic_control import rendering
 from gym.utils import seeding
 
-class MobileRobotGymEnv(gym.Env):
+class RealMobileRobotGymEnv(gym.Env):
     def __init__(self):
         self.goal_x = 0
         self.goal_y = 0
@@ -42,10 +45,6 @@ class MobileRobotGymEnv(gym.Env):
         self.get_goalbox = False
         self.position = Pose()
         self.pub_cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=5)
-        self.sub_odom = rospy.Subscriber('odom', Odometry, self.getOdometry)
-        self.reset_proxy = rospy.ServiceProxy('gazebo/reset_simulation', Empty)
-        self.unpause_proxy = rospy.ServiceProxy('gazebo/unpause_physics', Empty)
-        self.pause_proxy = rospy.ServiceProxy('gazebo/pause_physics', Empty)
         self.respawn_goal = Respawn()
         self.past_distance = 0.
         self.past_action = np.array([0.,0.])
@@ -61,30 +60,27 @@ class MobileRobotGymEnv(gym.Env):
         return self.count_collision, self.count_goal
 
     def shutdown(self):
-        #you can stop turtlebot by publishing an empty Twist
         rospy.loginfo("Stopping TurtleBot")
         self.pub_cmd_vel.publish(Twist())
         rospy.sleep(1)
 
     def getGoalDistace(self):
+        self.getRobotPos()
+        print(self.position)
         goal_distance = round(math.hypot(self.goal_x - self.position.x, self.goal_y - self.position.y), 2)
         self.past_distance = goal_distance
 
         return goal_distance
 
-    def getOdometry(self, odom):
-        self.position = odom.pose.pose.position
-        orientation = odom.pose.pose.orientation
+    def getRobotPos(self):
+        data = rospy.wait_for_message('/amcl_pose', PoseWithCovarianceStamped, timeout=15)
+        self.position = data.pose.pose.position
+        orientation = data.pose.pose.orientation
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         _, _, yaw = euler_from_quaternion(orientation_list)
 
         goal_angle = math.atan2(self.goal_y - self.position.y, self.goal_x - self.position.x)
-
-        #print 'yaw', yaw
-        #print 'gA', goal_angle
-
         heading = goal_angle - yaw
-        #print 'heading', heading
         if heading > pi:
             heading -= 2 * pi
 
@@ -98,25 +94,39 @@ class MobileRobotGymEnv(gym.Env):
         heading = self.heading
         min_range = 0.01
         done = False
+        scan_range.append(max(scan.ranges[0:35])) #1
+        scan_range.append(max(scan.ranges[36:71])) #2
+        scan_range.append(max(scan.ranges[72:107])) #3
+        scan_range.append(max(scan.ranges[108:143])) #4
+        scan_range.append(max(scan.ranges[144:179])) #5
+        scan_range.append(max(scan.ranges[180:215])) #6
+        scan_range.append(max(scan.ranges[216:251])) #7
+        scan_range.append(max(scan.ranges[252:287])) #8
+        scan_range.append(max(scan.ranges[288:323])) #9
+        scan_range.append(max(scan.ranges[324:360])) #10
 
-        for i in range(len(scan.ranges)):
-            if scan.ranges[i] == float('Inf'):
-                if type=='normal':scan_range.append(3.5)
-                if type=='normalized':scan_range.append(1) # 3.5 / 3.5
-            elif np.isnan(scan.ranges[i]):
-                scan_range.append(0)
-            else:
-                if type=='normal':scan_range.append(scan.ranges[i])
-                if type=='normalized':scan_range.append(scan.ranges[i] / 3.5)
 
+        for i in range(len(scan_range)):
+            if scan_range[i] == float('Inf'):
+                if type=='normal':scan_range[i] = 3.5
+                if type=='normalized':scan_range[i] = 1 # 3.5 / 3.5
+            elif np.isnan(scan_range[i]):
+                scan_range[i] = 0.
+            elif type=='normalized': scan_range[i] /= 3.5
+
+        # print(scan_range)
+        # print('Min scan range:',min(scan_range))
         if min_range > min(scan_range) > 0:
             done = True
 
         for pa in self.past_action:
             scan_range.append(pa)
 
+        self.getRobotPos()
+
         current_distance = round(math.hypot(self.goal_x - self.position.x, self.goal_y - self.position.y),2)
-        if current_distance < 0.4:
+        print('Current Distance:',current_distance)
+        if current_distance < 0.3:
             self.get_goalbox = True
 
         return scan_range + [heading, current_distance], done
@@ -146,8 +156,10 @@ class MobileRobotGymEnv(gym.Env):
             if type=='normal': reward = 500.
             elif type=='scaled': reward = 0.95
             self.count_goal+=1
-            self.pub_cmd_vel.publish(Twist())
-            self.goal_x, self.goal_y = self.respawn_goal.getPosition(True, delete=True)
+            vel_cmd = Twist()
+            vel_cmd.linear.x ,vel_cmd.angular.z = 0., 0.
+            self.pub_cmd_vel.publish(vel_cmd)
+            self.goal_x, self.goal_y = self.respawn_goal.movebase_client()
             self.goal_distance = self.getGoalDistace()
             self.get_goalbox = False
 
@@ -176,12 +188,6 @@ class MobileRobotGymEnv(gym.Env):
         return np.asarray(state), reward, done ,{}
 
     def reset(self):
-        rospy.wait_for_service('gazebo/reset_simulation')
-        try:
-            self.reset_proxy()
-        except (rospy.ServiceException) as e:
-            print("gazebo/reset_simulation service call failed")
-
         data = None
         while data is None:
             try:
@@ -190,10 +196,10 @@ class MobileRobotGymEnv(gym.Env):
                 pass
 
         if self.initGoal:
-            self.goal_x, self.goal_y = self.respawn_goal.getPosition()
+            self.goal_x, self.goal_y = self.respawn_goal.movebase_client()
             self.initGoal = False
         else:
-            self.goal_x, self.goal_y = self.respawn_goal.getPosition(True, delete=True)
+            self.goal_x, self.goal_y =  self.respawn_goal.movebase_client()
 
         self.goal_distance = self.getGoalDistace()
         state, done = self.getState(data)
