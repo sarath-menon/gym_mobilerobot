@@ -23,17 +23,17 @@ import math
 from math import pi
 from geometry_msgs.msg import Twist, Point, Pose
 from sensor_msgs.msg import LaserScan
-from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from respawnGoal import Respawn
+from geometry_msgs.msg import PoseWithCovarianceStamped
 
 import gym
 from gym import spaces
 # from gym.envs.classic_control import rendering
 from gym.utils import seeding
 
-class MobileRobotGymEnv(gym.Env):
+class MobileRobotGymEnv_sim_amcl(gym.Env):
     def __init__(self):
         self.goal_x = 0
         self.goal_y = 0
@@ -42,7 +42,7 @@ class MobileRobotGymEnv(gym.Env):
         self.get_goalbox = False
         self.position = Pose()
         self.pub_cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=5)
-        self.sub_odom = rospy.Subscriber('odom', Odometry, self.getOdometry)
+        self.sub_amcl = rospy.Subscriber('amcl_pose',PoseWithCovarianceStamped, self.get_amcl_pose)
         self.reset_proxy = rospy.ServiceProxy('gazebo/reset_simulation', Empty)
         self.unpause_proxy = rospy.ServiceProxy('gazebo/unpause_physics', Empty)
         self.pause_proxy = rospy.ServiceProxy('gazebo/pause_physics', Empty)
@@ -72,9 +72,9 @@ class MobileRobotGymEnv(gym.Env):
 
         return goal_distance
 
-    def getOdometry(self, odom):
-        self.position = odom.pose.pose.position
-        orientation = odom.pose.pose.orientation
+    def get_amcl_pose(self, amcl_pose):
+        self.position = amcl_pose.pose.pose.position
+        orientation = amcl_pose.pose.pose.orientation
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         _, _, yaw = euler_from_quaternion(orientation_list)
 
@@ -147,7 +147,7 @@ class MobileRobotGymEnv(gym.Env):
             elif type=='scaled': reward = 0.95
             self.count_goal+=1
             self.pub_cmd_vel.publish(Twist())
-            self.goal_x, self.goal_y = self.respawn_goal.getPosition(True, delete=True)
+            self.goal_x, self.goal_y = self.respawn_goal.get_goal(True, delete=True)
             self.goal_distance = self.getGoalDistace()
             self.get_goalbox = False
 
@@ -190,10 +190,10 @@ class MobileRobotGymEnv(gym.Env):
                 pass
 
         if self.initGoal:
-            self.goal_x, self.goal_y = self.respawn_goal.getPosition()
+            self.goal_x, self.goal_y = self.respawn_goal.get_goal()
             self.initGoal = False
         else:
-            self.goal_x, self.goal_y = self.respawn_goal.getPosition(True, delete=True)
+            self.goal_x, self.goal_y = self.respawn_goal.get_goal(True, delete=True)
 
         self.goal_distance = self.getGoalDistace()
         state, done = self.getState(data)

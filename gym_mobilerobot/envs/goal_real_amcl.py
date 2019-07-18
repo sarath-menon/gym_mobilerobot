@@ -25,8 +25,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Pose
-from gazebo_msgs.srv import SpawnModel, DeleteModel
-from gazebo_msgs.msg import ModelState, ModelStates
+# from gazebo_msgs.srv import SpawnModel, DeleteModel
+# from gazebo_msgs.msg import ModelState, ModelStates
 
 #---Directory Path---#
 dirPath = os.path.dirname(os.path.realpath(__file__))
@@ -46,21 +46,21 @@ class Respawn():
         self.last_goal_y = self.init_goal_y
         self.modelName = 'goal'
 
-    def respawnModel(self):
-        rospy.wait_for_service('gazebo/spawn_sdf_model')
-        spawn_model_prox = rospy.ServiceProxy('gazebo/spawn_sdf_model', SpawnModel)
-        spawn_model_prox(self.modelName, self.model, 'robotos_name_space', self.goal_position, "world")
-        rospy.loginfo("Goal position : %.1f, %.1f", self.goal_position.position.x,
-                      self.goal_position.position.y)
+    # def respawnModel(self):
+    #     rospy.wait_for_service('gazebo/spawn_sdf_model')
+    #     spawn_model_prox = rospy.ServiceProxy('gazebo/spawn_sdf_model', SpawnModel)
+    #     spawn_model_prox(self.modelName, self.model, 'robotos_name_space', self.goal_position, "world")
+    #     rospy.loginfo("Goal position : %.1f, %.1f", self.goal_position.position.x,
+    #                   self.goal_position.position.y)
 
-    def get_goal(self):
+    def specify_goal(self):
         print("Select Goal position in RViz Map")
         data = rospy.wait_for_message('/move_base_simple/goal', PoseStamped, timeout=500)
 
         self.goal_position.position.x = data.pose.position.x
         self.goal_position.position.y = data.pose.position.y
 
-        self.respawnModel()
+        # self.respawnModel()
         # self.last_goal_x = self.goal_position.position.x
         # self.last_goal_y = self.goal_position.position.y
 

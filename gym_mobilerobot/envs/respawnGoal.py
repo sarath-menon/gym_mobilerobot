@@ -104,7 +104,7 @@ class Respawn(Combination):
                 count+=1
 
 
-    def getPosition(self, position_check=True, delete=False):
+    def get_goal(self, position_check=True, delete=False):
         if delete:
             self.deleteModel()
 
