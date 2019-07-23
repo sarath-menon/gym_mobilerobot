@@ -89,6 +89,7 @@ class Respawn(Combination):
 
     def move_obstacles(self, goal_x, goal_y):
         model = rospy.wait_for_message('gazebo/model_states', ModelStates)
+        print(model)
         count=0
         for i in range(len(model.name)):
             if count==2 : break
@@ -101,6 +102,7 @@ class Respawn(Combination):
                 obstacle_1.pose.position.y = random.randrange(-15, 17) / 10.0
                 self.obstacles[model.name[i]] = [obstacle_1.pose.position.x, obstacle_1.pose.position.y]
                 count+=1
+                
 
 
     def getPosition(self, position_check=True, delete=False):
