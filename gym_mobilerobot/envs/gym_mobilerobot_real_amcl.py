@@ -94,18 +94,18 @@ class MobileRobotGymEnv_real_amcl(gym.Env):
     def getState(self, scan, type='normalized'):
         scan_range = []
         heading = self.heading
-        min_range = 0.05
+        min_range = 0.01 / 3.5
         done = False
-        # scan_range.append(max(scan.ranges[0:35])) #1
-        # scan_range.append(max(scan.ranges[36:71])) #2
-        # scan_range.append(max(scan.ranges[72:107])) #3
-        # scan_range.append(max(scan.ranges[108:143])) #4
-        # scan_range.append(max(scan.ranges[144:179])) #5
-        # scan_range.append(max(scan.ranges[180:215])) #6
-        # scan_range.append(max(scan.ranges[216:251])) #7
-        # scan_range.append(max(scan.ranges[252:287])) #8
-        # scan_range.append(max(scan.ranges[288:323])) #9
-        # scan_range.append(max(scan.ranges[324:360])) #10
+        # scan_range.append(max(scan.ranges[0:51])) #1
+        # scan_range.append(max(scan.ranges[52:102])) #2
+        # scan_range.append(max(scan.ranges[103:153])) #3
+        # scan_range.append(max(scan.ranges[154:204])) #4
+        # scan_range.append(max(scan.ranges[205:255])) #5
+        # scan_range.append(max(scan.ranges[256:306])) #6
+        # scan_range.append(max(scan.ranges[307:357])) #7
+        # scan_range.append(max(scan.ranges[358:408])) #8
+        # scan_range.append(max(scan.ranges[409:459])) #9
+        # scan_range.append(max(scan.ranges[460:511])) #10
         scan_range = list(scan.ranges[0:512:56]) #1
 
         print('Before',scan_range)
@@ -122,8 +122,8 @@ class MobileRobotGymEnv_real_amcl(gym.Env):
             elif type=='normalized': scan_range[i] /= 3.2
         print('After',scan_range)
 
-        if min_range > min(scan_range) > 0:
-            done = True
+        # if min_range < min(scan_range):
+        #     done = True
 
         for pa in self.past_action:
             scan_range.append(pa)
