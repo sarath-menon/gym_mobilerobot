@@ -108,6 +108,9 @@ class Respawn(Combination):
     def getPosition(self, position_check=True, delete=False):
         if delete:
             self.deleteModel()
+            
+        goal_x = random.randrange(-12, 13) / 10.0
+        goal_y = random.randrange(-12, 13) / 10.0    
 
         if self.stage == 'static_obstacle' or self.stage == 'dynamic_obstacle':
             while position_check:
@@ -126,9 +129,6 @@ class Respawn(Combination):
 
                 if abs(goal_x - self.last_goal_x) < 1 and abs(goal_y - self.last_goal_y) < 1:
                     position_check = True
-
-        goal_x = random.randrange(-12, 13) / 10.0
-        goal_y = random.randrange(-12, 13) / 10.0
         
         self.goal_position.position.x = goal_x
         self.goal_position.position.y = goal_y
